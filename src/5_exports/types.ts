@@ -66,9 +66,9 @@ export {
   WebchalkConnectorElement,
 } from "../3_components/WebchalkConnectorElement";
 
-export {
-  WebchalkPlaybackButtonElement,
-} from "../3_components/WebchalkPlaybackButtonElement";
+// export {
+//   WebchalkPlaybackButtonElement,
+// } from "../3_components/WebchalkPlaybackButtonElement";
 
 export type * from "../4_utils/interfaces";
 
