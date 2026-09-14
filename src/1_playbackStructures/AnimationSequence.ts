@@ -185,6 +185,9 @@ export type AnimSequenceStatus = {
 };
 
 // TYPE
+/**
+ * An object containing basic information about the sequence and its parents & children.
+ */
 export type AnimSequenceHierarchy = {
   /**
    * The parent {@link AnimTimeline} that contains this sequence clip (may be `undefined`).

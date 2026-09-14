@@ -4,7 +4,7 @@ dist-dev
 **/templates/styles/css
 **/tarballs
 typedoc-config/assets/plugins
-typedoc-config/assets/**/typedoc-styles.css
+typedoc-config/assets/styles/**
 .vscode
 .cache
 .parcel-cache
