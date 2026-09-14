@@ -636,6 +636,7 @@ export class AnimTimeline {
    * Object containing properties that are either references to `<webchalk-playback-button>` elements that are connected to this timeline or `null`.
    *  * A property being `null` indicates that there is currently no corresponding button on the page that is linked to this timeline.
    * @group UI Methods
+   * @internal
    */
   get playbackButtons(): Readonly<PlaybackButtons> { return {...this._playbackButtons}; }
 
