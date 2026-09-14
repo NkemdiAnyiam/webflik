@@ -187,6 +187,8 @@ export type AnimSequenceStatus = {
 // TYPE
 /**
  * An object containing basic information about the sequence and its parents & children.
+ * @category Interfaces
+ * @interface
  */
 export type AnimSequenceHierarchy = {
   /**
@@ -326,12 +328,21 @@ export class AnimSequence {
     this.webchalkSequenceEl?.updateSequenceNumber(trackNumber);
   }
   animClips: AnimClip[] = []; // array of animClips TODO: make private
+  /**
+   * The number of clips in this sequence.
+   * @group Structure
+   */
   get numClips(): number { return this.animClips.length; }
 
+  /**
+   * Returns an object containing basic information about the sequence and its parents & children.
+   * @returns An object containing basic information about the sequence and its parents & children.
+   * @group Structure
+   */
   getHierarchy(): AnimSequenceHierarchy {
     return {
-      parentTimeline: this.parentTimeline,
-      root: this.parentTimeline ?? this,
+      parentTimeline: this._parentTimeline,
+      root: this.root,
       sequenceNumber: this.sequenceNumber,
       clips: this.animClips,
       numClips: this.animClips.length,

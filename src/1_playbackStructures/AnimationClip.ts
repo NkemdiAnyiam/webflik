@@ -261,6 +261,11 @@ export type AnimClipStatus = {
 };
 
 // TYPE
+/**
+ * An object containing basic information about the clip and its parents.
+ * @category Interfaces
+ * @interface
+ */
 export type AnimClipHierarchy = {
   /**
    * The parent {@link AnimSequence} that contains this clip
@@ -533,11 +538,16 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
     this.webchalkClipEl?.updateClipNumber(trackNumber);
   }
 
+  /**
+   * Returns an object containing basic information about the clip and its parents.
+   * @returns An object containing basic information about the clip and its parents.
+   * @group Structure
+   */
   getHierarchy(): AnimClipHierarchy {
     return {
       parentSequence: this._parentSequence,
-      parentTimeline: this.parentTimeline,
-      root: this.parentTimeline ?? this.parentSequence ?? this,
+      parentTimeline: this._parentTimeline,
+      root: this.root,
       clipNumber: this.clipNumber,
     };
   }
@@ -1935,6 +1945,7 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
   /*-:***************************************         OPERATIONS         *******************************************************/
   /*-:**************************************************************************************************************************/
   // TODO: Make compare() work for subclass-specific properties as well.
+  // TODO: Add code examples.
   /**
    * Compares this animation clip with another animation clip on the specified fields and returns `true` only if the fields are equivalent.
    * Possible fields for comparison are
@@ -1953,6 +1964,7 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
    * @param otherClip - The clip to compare the current clip to.
    * @param fields - An array of strings indicating which fields to compare the clips on.
    * @returns A boolean value indicating the result of comparing the clips on the specified fields.
+   * @group Operations
    */
   compare<TClip extends AnimClip>(
     otherClip: TClip,

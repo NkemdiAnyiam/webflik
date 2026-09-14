@@ -111,6 +111,11 @@ export type AnimTimelineStatus = {
 };
 
 // TYPE
+/**
+ * An object containing basic information about the timeline and its children.
+ * @category Interfaces
+ * @interface
+ */
 export type AnimTimelineHierarchy = {
   /**
    * The highest level of this timeline's lineage.
@@ -240,6 +245,11 @@ export class AnimTimeline {
    */
   get numSequences(): number { return this.animSequences.length; }
 
+  /**
+   * Returns an object containing basic information about the timeline and its children.
+   * @returns An object containing basic information about the timeline and its children.
+   * @group Structure
+   */
   getHierarchy(): AnimTimelineHierarchy {
     return {
       root: this,
@@ -1228,6 +1238,14 @@ export class AnimTimeline {
     return this.jumpTo({ jumpTag, search, searchOffset, targetOffset, autoplayDetection });
   }
 
+  /**
+   * Jumps instantly to the sequence located at the specified heading(s).
+   * @param headingSpecifics - An object containing the hierarchy of headings to search for.
+   * @param options - An options object defining the offset of the jump and whether to consider autoplay.
+   * @returns A {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise | Promise} that resolves when the timeline has finished jumping.
+   * 
+   * @group Playback Methods
+   */
   jumpToSequenceHeading(
     headingSpecifics: {h2?: string | RegExp; h3?: string | RegExp; h4?: string | RegExp; h5?: string | RegExp; h6?: string | RegExp;},
     options: {
