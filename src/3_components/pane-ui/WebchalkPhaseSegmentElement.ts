@@ -12,7 +12,6 @@ if (process.env.NODE_ENV === 'development') {
   devHtmlComponentStr = fs.readFileSync(__dirname+'/templates/html/phase-segment.html', 'utf-8');
 }
 
-// TODO: hide from documentation (and in general, for all UI stuff, hide constructor or class entirely)
 export class WebchalkPhaseSegmentElement extends HTMLElement {
   /**@internal*/ static addToCustomElementRegistry() { customElements.define('webchalk-phase-segment', WebchalkPhaseSegmentElement); }
   static id = 0;

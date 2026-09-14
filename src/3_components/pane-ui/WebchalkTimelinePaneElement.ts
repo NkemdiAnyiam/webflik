@@ -14,10 +14,20 @@ if (process.env.NODE_ENV === 'development') {
   devHtmlComponentStr = fs.readFileSync(__dirname+'/templates/html/timeline-pane.html', 'utf-8');
 }
 
+/**
+ * Creates a CSS string value for using `var(--hem)`.
+ * @param numHem - The number of hem.
+ * @returns A CSS string value in the form `'calc(numHem * var(--hem))'`.
+ */
 export function hem(numHem: number): string {
   return `calc(${numHem} * var(--hem))`;
 }
 
+/**
+ * Creates a CSS string value representing the hem length of the specified number of seconds.
+ * @param numHem - The number of hem.
+ * @returns A CSS string value in the form `'calc(var(--hems-per-second) * numHem * var(--hem))'`.
+ */
 export function hemSecs(numHem: number): string {
   return `calc(var(--hems-per-second) * ${numHem} * var(--hem))`;
 }
