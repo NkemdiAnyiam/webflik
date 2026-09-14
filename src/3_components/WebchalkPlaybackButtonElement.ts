@@ -55,9 +55,6 @@ stylesheet.replaceSync(
   }`
 );
 
-/**
- * @internal
- */
 export class WebchalkPlaybackButtonElement extends HTMLElement {
   /**@internal*/ static addToCustomElementRegistry() { customElements.define('webchalk-playback-button', WebchalkPlaybackButtonElement); }
 
