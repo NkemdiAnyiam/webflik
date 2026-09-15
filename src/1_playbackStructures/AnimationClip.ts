@@ -262,7 +262,7 @@ export type AnimClipStatus = {
 
 // TYPE
 /**
- * An object containing basic information about the clip and its parents.
+ * An object containing details about the relationship between the clip and its parents.
  * @category Interfaces
  * @interface
  */
@@ -505,27 +505,8 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
    * Automatically generated.
    */
   readonly id: number;
-  // TODO: remove the getters for these
-  /**@internal*/ _parentSequence?: AnimSequence;
-  /**@internal*/ _parentTimeline?: AnimTimeline;
-  /**
-   * The parent {@link AnimSequence} that contains this clip
-   * (`undefined` if the clip is not part of a sequence).
-   * @group Structure
-   */
-  get parentSequence() { return this._parentSequence; }
-  /**
-   * The parent {@link AnimTimeline} that contains the {@link AnimSequence} that contains this clip (may be `undefined`).
-   * @group Structure
-   */
-  get parentTimeline() { return this._parentTimeline; }
-  /**
-   * The highest level of this clip's lineage.
-   *  * If the clip is nested within an {@link AnimTimeline}: that timeline,
-   *  * Else, if the clip is within an {@link AnimSequence}: that sequence,
-   *  * Else: the clip itself
-   * @group Structure
-   */
+  private parentSequence?: AnimSequence
+  private parentTimeline?: AnimTimeline;
   get root(): AnimTimeline | AnimSequence | AnimClip { return this.parentTimeline ?? this.parentSequence ?? this; }
   /**
    * The DOM element that is to be animated.
@@ -533,23 +514,49 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
    */
   readonly domElem: DOMElement;
   private clipNumber: number = NaN;
-  /** @internal */ updateClipNumber(trackNumber: number) {
+  /** @internal */
+  updateClipNumber(trackNumber: number) {
     this.clipNumber = trackNumber;
     this.webchalkClipEl?.updateClipNumber(trackNumber);
   }
 
   /**
-   * Returns an object containing basic information about the clip and its parents.
-   * @returns An object containing basic information about the clip and its parents.
+   * Returns an object containing details about the relationship between the clip and its parents.
+   * @returns An object containing
+   *  * {@link AnimClipHierarchy.parentSequence|parentSequence},
+   *  * {@link AnimClipHierarchy.parentTimeline|parentTimeline},
+   *  * {@link AnimClipHierarchy.root|root},
+   *  * {@link AnimClipHierarchy.clipNumber|clipNumber},
    * @group Structure
    */
-  getHierarchy(): AnimClipHierarchy {
-    return {
-      parentSequence: this._parentSequence,
-      parentTimeline: this._parentTimeline,
-      root: this.root,
-      clipNumber: this.clipNumber,
-    };
+  getHierarchy(): AnimClipHierarchy;
+  /**
+   * Returns the value of a single specific property.
+   * @param propName - The name of the desired property.
+   * @ignore
+   */
+  getHierarchy<T extends keyof AnimClipHierarchy>(propName: T): AnimClipHierarchy[T];
+  /**
+   * @group Structure
+   */
+  getHierarchy(propName?: keyof AnimClipHierarchy): AnimClipHierarchy | AnimClipHierarchy[keyof AnimClipHierarchy] {
+    if (!propName) {
+      return {
+        parentSequence: this.parentSequence,
+        parentTimeline: this.parentTimeline,
+        root: this.root,
+        clipNumber: this.clipNumber,
+      };
+    }
+    else {
+      switch(propName) {
+        case "parentSequence": return this.parentSequence;
+        case "parentTimeline": return this.parentTimeline;
+        case "root": return this.root;
+        case "clipNumber": return this.clipNumber;
+        default: throw new RangeError(`Invalid propName "${propName}"`);
+      }
+    }
   }
 
   // GROUP: Styles
@@ -711,7 +718,7 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
 
   // GROUP: Timing
   private get compoundedPlaybackRate(): number {
-    return this.config.playbackRate * (this._parentSequence?.internalCompoundedPlaybackRate ?? 1);
+    return this.config.playbackRate * (this.parentSequence?.internalCompoundedPlaybackRate ?? 1);
   }
   protected timescaleType: 'duration' | 'rate' = 'duration';
   
@@ -883,12 +890,12 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
   setLineage(level: 'sequence' | 'timeline', sequence: AnimSequence): boolean {
     switch(level) {
       case "sequence":
-        if (this._parentSequence) { return false; }
-        this._parentSequence = sequence;
-        this._parentTimeline = sequence.getHierarchy().parentTimeline;
+        if (this.parentSequence) { return false; }
+        this.parentSequence = sequence;
+        this.parentTimeline = sequence.getHierarchy('parentTimeline');
         break;
       case "timeline":
-        this._parentTimeline = sequence._parentTimeline;
+        this.parentTimeline = sequence.getHierarchy('parentTimeline');
         break;
       default: this.generateError(RangeError, [`Invalid level "${level}". Must be "sequence" or "timeline"`]);
     }
@@ -903,12 +910,12 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
   removeLineage(level: 'sequence' | 'timeline'): this {
     switch(level) {
       case "sequence":
-        this._parentSequence = undefined;
-        this._parentTimeline = undefined;
+        this.parentSequence = undefined;
+        this.parentTimeline = undefined;
         this.updateClipNumber(NaN);
         break;
       case "timeline":
-        this._parentTimeline = undefined
+        this.parentTimeline = undefined
         break;
       default: this.generateError(RangeError, [`Invalid level "${level}". Must be "sequence" or "timeline"`]);
     }
@@ -1076,7 +1083,7 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
   async play(parentSequence: AnimSequence): Promise<this>;
   async play(parentSequence?: AnimSequence): Promise<this> {
     // both parentSequence vars should either be undefined or the same AnimSequence
-    if (this._parentSequence !== parentSequence) { this.throwChildPlaybackError(this.play.name); }
+    if (this.parentSequence !== parentSequence) { this.throwChildPlaybackError(this.play.name); }
     this.currAnimatePromise = this.animate('forward');
     return this.currAnimatePromise;
   }
@@ -1090,7 +1097,7 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
   /**@internal*/
   async rewind(parentSequence: AnimSequence): Promise<this>;
   async rewind(parentSequence?: AnimSequence): Promise<this> {
-    if (this._parentSequence !== parentSequence) { this.throwChildPlaybackError(this.rewind.name); }
+    if (this.parentSequence !== parentSequence) { this.throwChildPlaybackError(this.rewind.name); }
     this.currAnimatePromise = this.animate('backward');
     return this.currAnimatePromise;
   }
@@ -1104,7 +1111,7 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
   /**@internal*/
   pause(parentSequence?: AnimSequence): this;
   pause(parentSequence?: AnimSequence): this {
-    if (this._parentSequence !== parentSequence) { this.throwChildPlaybackError(this.pause.name); }
+    if (this.parentSequence !== parentSequence) { this.throwChildPlaybackError(this.pause.name); }
     if (this.isRunning) {
       this.isPaused = true;
       this.isRunning = false;
@@ -1122,7 +1129,7 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
   /**@internal*/
   unpause(parentSequence: AnimSequence): this;
   unpause(parentSequence?: AnimSequence): this {
-    if (this._parentSequence !== parentSequence) { this.throwChildPlaybackError(this.unpause.name); }
+    if (this.parentSequence !== parentSequence) { this.throwChildPlaybackError(this.unpause.name); }
     if (this.isPaused) {
       this.isPaused = false;
       this.isRunning = true;
@@ -1143,7 +1150,7 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
   /**@internal*/
   async finish(parentSequence: AnimSequence): Promise<this>;
   async finish(parentSequence?: AnimSequence): Promise<this> {
-    if (this._parentSequence !== parentSequence) { this.throwChildPlaybackError(this.finish.name); }
+    if (this.parentSequence !== parentSequence) { this.throwChildPlaybackError(this.finish.name); }
     // finish() is not allowed to execute if clip is paused
     // TODO: maybe throw an error instead of just returning
     if (this.isPaused) { return this; }
@@ -1443,7 +1450,7 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
     this.config.duration = duration;
     this.animation.updateDuration(duration, rescheduleTasks);
     this.webchalkClipEl?.updateDuration(duration);
-    this._parentSequence?.commitForRate(this);
+    this.parentSequence?.commitForRate(this);
   }
 
   protected async animate(direction: 'forward' | 'backward'): Promise<this> {
@@ -1536,14 +1543,14 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
     this.isRunning = true;
 
     if (
-      (this._parentSequence?.getStatus('skippingOn') || this._parentSequence?.getStatus('usingFinish'))
+      (this.parentSequence?.getStatus('skippingOn') || this.parentSequence?.getStatus('usingFinish'))
       && !this.jumpingDisabled
     )
       { animation.finish(); }
     else
       { animation.play(); }
-    if (this._parentSequence?.getStatus('isPaused')) { this.pause(this.parentSequence); }
-    this._parentTimeline?.webchalkTimelineEl?.scrollToClip(this, direction);
+    if (this.parentSequence?.getStatus('isPaused')) { this.pause(this.parentSequence); }
+    this.parentTimeline?.webchalkTimelineEl?.scrollToClip(this, direction);
     
     // After delay phase, apply class modifications and call onStart functions.
     animation.onDelayFinish = () => {
@@ -1999,8 +2006,8 @@ export abstract class AnimClip<TPresetEffectDefinition extends PresetEffectDefin
   /*-:**************************************************************************************************************************/
   protected generateError: ClipErrorGenerator = (ErrorClassOrInstance, msg = ['<unspecified error>'], elementOverride?: DOMElement) => {
     return generateError(ErrorClassOrInstance, msg as [logMessageStr: string, uiMessageFrags?: ErrorUIMessageFragments], {
-      timeline: this._parentTimeline,
-      sequence: this._parentSequence,
+      timeline: this.parentTimeline,
+      sequence: this.parentSequence,
       clip: this,
       element: elementOverride ? elementOverride : this.domElem
     });

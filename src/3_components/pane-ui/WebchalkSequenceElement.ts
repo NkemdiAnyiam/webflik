@@ -158,7 +158,7 @@ export class WebchalkSequenceElement extends HTMLElement {
     if (sequence.getTiming('autoplays')) { this.classList.add('autoplays'); }
     if (sequence.getTiming('autoplaysNextSequence')) { this.classList.add('auto-next'); }
 
-    this.insertClips(0, sequence.animClips);
+    this.insertClips(0, sequence.getHierarchy('clips'));
     
     this.updateMaxSecondsDisplayed(sequence.maxTime / 1000);
 

@@ -186,13 +186,14 @@ export type AnimSequenceStatus = {
 
 // TYPE
 /**
- * An object containing basic information about the sequence and its parents & children.
+ * An object containing details about the relationship between the sequence and its parents & children.
  * @category Interfaces
  * @interface
  */
 export type AnimSequenceHierarchy = {
   /**
-   * The parent {@link AnimTimeline} that contains this sequence clip (may be `undefined`).
+   * The parent {@link AnimTimeline} that contains this sequence clip
+   * (`undefined` if the sequence is not part of a timeline).
    * @group Structure
    */
   parentTimeline?: AnimTimeline;
@@ -305,48 +306,57 @@ export class AnimSequence {
    * Automatically generated.
    */
   readonly id: number;
-  /**
-   * @group Structure
-   */
-  /**@internal*/ _parentTimeline?: AnimTimeline; // pointer to parent AnimTimeline
-  /**
-   * The highest level of this sequence's lineage.
-   *  * If the sequence is nested within an {@link AnimTimeline}: that timeline is the root.
-   *  * Else: the sequence itself is the root.
-   * @group Structure
-   */
-  get root(): AnimTimeline | AnimSequence { return this.parentTimeline ?? this; }
-  /**
-   * The parent {@link AnimTimeline} that contains this sequence
-   * (`undefined` if the sequence is not part of a timeline).
-   * @group Structure
-   */
-  get parentTimeline() { return this._parentTimeline; }
+  private parentTimeline?: AnimTimeline; // pointer to parent AnimTimeline
+  private get root(): AnimTimeline | AnimSequence { return this.parentTimeline ?? this; }
   private sequenceNumber: number = NaN;
-  /** @internal */ updateSequenceNumber(trackNumber: number) {
+  /** @internal */
+  updateSequenceNumber(trackNumber: number) {
     this.sequenceNumber = trackNumber;
     this.webchalkSequenceEl?.updateSequenceNumber(trackNumber);
   }
-  animClips: AnimClip[] = []; // array of animClips TODO: make private
-  /**
-   * The number of clips in this sequence.
-   * @group Structure
-   */
-  get numClips(): number { return this.animClips.length; }
+  private animClips: AnimClip[] = [];
+  private get numClips() { return this.animClips.length; }
 
   /**
-   * Returns an object containing basic information about the sequence and its parents & children.
-   * @returns An object containing basic information about the sequence and its parents & children.
+   * Returns an object containing details about the relationship between the sequence and its parents & children.
+   * @returns An object containing
+   *  * {@link AnimSequenceHierarchy.parentTimeline|parentTimeline},
+   *  * {@link AnimSequenceHierarchy.root|root},
+   *  * {@link AnimSequenceHierarchy.sequenceNumber|sequenceNumber},
+   *  * {@link AnimSequenceHierarchy.clips|clips},
+   *  * {@link AnimSequenceHierarchy.numClips|numClips},
    * @group Structure
    */
-  getHierarchy(): AnimSequenceHierarchy {
-    return {
-      parentTimeline: this._parentTimeline,
-      root: this.root,
-      sequenceNumber: this.sequenceNumber,
-      clips: this.animClips,
-      numClips: this.animClips.length,
-    };
+  getHierarchy(): AnimSequenceHierarchy;
+  /**
+   * Returns the value of a single specific property.
+   * @param propName - The name of the desired property.
+   * @ignore
+   */
+  getHierarchy<T extends keyof AnimSequenceHierarchy>(propName: T): AnimSequenceHierarchy[T];
+  /**
+   * @group Structure
+   */
+  getHierarchy(propName?: keyof AnimSequenceHierarchy): AnimSequenceHierarchy | AnimSequenceHierarchy[keyof AnimSequenceHierarchy] {
+    if (!propName) {
+      return {
+        parentTimeline: this.parentTimeline,
+        root: this.root,
+        sequenceNumber: this.sequenceNumber,
+        clips: [...this.animClips],
+        numClips: this.animClips.length,
+      };
+    }
+    else {
+      switch(propName) {
+        case "parentTimeline": return this.parentTimeline;
+        case "sequenceNumber": return this.sequenceNumber;
+        case "root": return this.root;
+        case "clips": return [...this.animClips];
+        case "numClips": return this.numClips;
+        default: throw new RangeError(`Invalid propName "${propName}"`);
+      }
+    }
   }
 
   private animClipGroupings_activeFinishOrder: AnimClip[][] = [];
@@ -377,7 +387,7 @@ export class AnimSequence {
   private isFinished: boolean = false;
   private wasPlayed = false;
   private wasRewound = false;
-  private get skippingOn() { return this._parentTimeline?.getStatus('skippingOn') || this._parentTimeline?.getStatus('isJumping') || false; }
+  private get skippingOn() { return this.parentTimeline?.getStatus('skippingOn') || this.parentTimeline?.getStatus('isJumping') || false; }
   private get lockedStructure(): boolean {
     if (this.inProgress || this.wasPlayed) { return true; }
     return false;
@@ -450,7 +460,7 @@ export class AnimSequence {
   private static pseudoJumpingPlaybackMultiplier = 100;
 
   protected get compoundedPlaybackRate() {
-    return this.config.playbackRate * (this._parentTimeline?.getTiming().playbackRate ?? 1);
+    return this.config.playbackRate * (this.parentTimeline?.getTiming().playbackRate ?? 1);
   }
 
   protected get currentTime(): number {
@@ -637,11 +647,11 @@ export class AnimSequence {
    * @group Structure
    */
   setLineage(timeline: AnimTimeline): boolean {
-    if (this._parentTimeline) {
+    if (this.parentTimeline) {
       return false;
     }
 
-    this._parentTimeline = timeline;
+    this.parentTimeline = timeline;
     for (const animClip of this.animClips) {
       animClip.setLineage('timeline', this);
     }
@@ -655,7 +665,7 @@ export class AnimSequence {
    * @group Structure
    */
   removeLineage(): this {
-    this._parentTimeline = undefined;
+    this.parentTimeline = undefined;
     this.updateSequenceNumber(NaN);
     for (const clip of this.animClips) {
       clip.removeLineage('timeline');
@@ -695,7 +705,7 @@ export class AnimSequence {
         throw this.generateError(CustomErrorClasses.InvalidChildError, [`At least one of the objects being added is not an AnimClip.`]);
       }
 
-      if (animClip.parentSequence) {
+      if (animClip.getHierarchy('parentSequence')) {
         // TODO: Improve error message
         throw this.generateError(CustomErrorClasses.InvalidChildError, [`At least one of the clips being added is already part of some sequence.`]);
       }
@@ -1377,7 +1387,7 @@ export class AnimSequence {
   protected generateError: SequenceErrorGenerator = (ErrorClassOrInstance, msg = ['<unspecified error>']) => {
     return generateError(ErrorClassOrInstance, msg as [logMessageStr: string, uiMessageFrags?: ErrorUIMessageFragments], {
       sequence: this,
-      timeline: this._parentTimeline
+      timeline: this.parentTimeline
     });
   }
 

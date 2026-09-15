@@ -112,7 +112,7 @@ export type AnimTimelineStatus = {
 
 // TYPE
 /**
- * An object containing basic information about the timeline and its children.
+ * An object containing details about the relationship between the timeline and its children.
  * @category Interfaces
  * @interface
  */
@@ -232,30 +232,44 @@ export class AnimTimeline {
    */
   readonly id;
 
-  /**
-   * The highest level of this timeline's lineage.
-   *  * The timeline itself is always the root (there is currently no higher possible level).
-   * @group Structure
-   */
-  get root(): AnimTimeline { return this; }
-  /** @internal */ animSequences: AnimSequence[] = []; // array of every AnimSequence in this timeline
-  /**
-   * The number of sequences in this timeline.
-   * @group Structure
-   */
-  get numSequences(): number { return this.animSequences.length; }
+  private get root(): AnimTimeline { return this; }
+  private animSequences: AnimSequence[] = []; // array of every AnimSequence in this timeline
+  private get numSequences(): number { return this.animSequences.length; }
 
   /**
-   * Returns an object containing basic information about the timeline and its children.
-   * @returns An object containing basic information about the timeline and its children.
+   * Returns an object containing details about the relationship between the timeline and its children.
+   * @returns An object containing
+   *  * {@link AnimTimelineHierarchy.root|root},
+   *  * {@link AnimTimelineHierarchy.sequences|sequences},
+   *  * {@link AnimTimelineHierarchy.numSequences|numSequences},
    * @group Structure
    */
-  getHierarchy(): AnimTimelineHierarchy {
-    return {
-      root: this,
-      sequences: this.animSequences,
-      numSequences: this.animSequences.length,
-    };
+  getHierarchy(): AnimTimelineHierarchy;
+  /**
+   * Returns the value of a single specific property.
+   * @param propName - The name of the desired property.
+   * @ignore
+   */
+  getHierarchy<T extends keyof AnimTimelineHierarchy>(propName: T): AnimTimelineHierarchy[T];
+  /**
+   * @group Structure
+   */
+  getHierarchy(propName?: keyof AnimTimelineHierarchy): AnimTimelineHierarchy | AnimTimelineHierarchy[keyof AnimTimelineHierarchy] {
+    if (!propName) {
+      return {
+        root: this.root,
+        sequences: [...this.animSequences],
+        numSequences: this.numSequences,
+      };
+    }
+    else {
+      switch(propName) {
+        case "root": return this.root;
+        case "sequences": return this.animSequences;
+        case "numSequences": return this.numSequences;
+        default: throw new RangeError(`Invalid propName "${propName}"`);
+      }
+    }
   }
 
   private loadedSeqIndex = 0; // index into animSequences
@@ -432,7 +446,7 @@ export class AnimTimeline {
       if (!(animSequence instanceof AnimSequence)) {
         throw this.generateError(CustomErrorClasses.InvalidChildError, [`At least one of the objects being added is not an AnimSequence.`]);
       }
-      if (animSequence.parentTimeline) {
+      if (animSequence.getHierarchy('parentTimeline')) {
         // TODO: Improve error message
         throw this.generateError(CustomErrorClasses.InvalidChildError, [`At least one of the sequences being added is already part of some timeline.`]);
       }

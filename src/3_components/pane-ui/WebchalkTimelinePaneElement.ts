@@ -122,7 +122,7 @@ export class WebchalkTimelinePaneElement extends HTMLElement {
       case 'step': {
         const datalistEl = this.shadowRoot!.querySelector('.timeline__control--jump--step .timeline__jump-datalist') as HTMLDataListElement;
         const frag = new DocumentFragment();
-        for (let i = datalistEl.childElementCount; i < this.animTimeline!.numSequences; ++i) {
+        for (let i = datalistEl.childElementCount; i < this.animTimeline!.getHierarchy('numSequences'); ++i) {
           frag.appendChild(createElFromString(/*html*/`<option value="${i + 1}">${i + 1}</option>`));
         }
         datalistEl.appendChild(frag);
@@ -134,7 +134,7 @@ export class WebchalkTimelinePaneElement extends HTMLElement {
         const datalistEl = this.shadowRoot!.querySelector('.timeline__control--jump--tag .timeline__jump-datalist') as HTMLDataListElement;
         const frag = new DocumentFragment();
         // TODO: Decide whether to sort alphabetically (or add option to change the sort).
-        const uniqueJumpTags = [...new Set(this.animTimeline!.animSequences.map(sequence => sequence.getJumpTag()))].filter(str => str);
+        const uniqueJumpTags = [...new Set(this.animTimeline!.getHierarchy('sequences').map(sequence => sequence.getJumpTag()))].filter(str => str);
         for (let i = 0; i < uniqueJumpTags.length; ++i) {
           const str = escapeHtml(uniqueJumpTags[i]);
           frag.appendChild(createElFromString(/*html*/`<option value="${str}">${str}</option>`));
@@ -148,7 +148,7 @@ export class WebchalkTimelinePaneElement extends HTMLElement {
       case 'heading': {
         const datalistEl = this.shadowRoot!.querySelector('.timeline__control--jump--heading .timeline__jump-datalist') as HTMLDataListElement;
         const frag = new DocumentFragment();
-        const headingsObjs = [...this.animTimeline!.animSequences.map(sequence => sequence.getHeadings())].filter(headings => Boolean(headings));
+        const headingsObjs = [...this.animTimeline!.getHierarchy('sequences').map(sequence => sequence.getHeadings())].filter(headings => Boolean(headings));
         const headingSpecifics: {h2?: string, h3?: string, h4?: string, h5?: string, h6?: string} = {};
 
         for (let i = 0; i < headingsObjs.length; ++i) {
@@ -185,7 +185,7 @@ export class WebchalkTimelinePaneElement extends HTMLElement {
     {
       // update step number datalist
       const datalistEl = this.shadowRoot!.querySelector('.timeline__jump-container--step .timeline__jump-datalist') as HTMLDataListElement;
-      for (let i = datalistEl.childElementCount; i > this.animTimeline!.numSequences; --i) {
+      for (let i = datalistEl.childElementCount; i > this.animTimeline!.getHierarchy('numSequences'); --i) {
         datalistEl.lastChild?.remove();
       }
     }
@@ -194,7 +194,7 @@ export class WebchalkTimelinePaneElement extends HTMLElement {
       // update jump tag datalist
       const datalistEl = this.shadowRoot!.querySelector('.timeline__jump-container--tag .timeline__jump-datalist') as HTMLDataListElement;
       const frag = new DocumentFragment();
-      const uniqueJumpTags = [...new Set(this.animTimeline!.animSequences.map(sequence => sequence.getJumpTag()))].filter(str => str);
+      const uniqueJumpTags = [...new Set(this.animTimeline!.getHierarchy('sequences').map(sequence => sequence.getJumpTag()))].filter(str => str);
       for (let i = 0; i < uniqueJumpTags.length; ++i) {
         const str = escapeHtml(uniqueJumpTags[i]);
         frag.appendChild(createElFromString(/*html*/`<option value="${str}">${str}</option>`));
